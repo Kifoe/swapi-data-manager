@@ -1,6 +1,5 @@
 import logging
 import pandas as pd
-from typing import Type
 from SWAPIClient import SWAPIClient
 from EntityProcessor import EntityProcessor
 
