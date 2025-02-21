@@ -15,7 +15,7 @@ args = parser.parse_args()
 if args.input.startswith("http"):
     client = SWAPIClient(base_url=args.input)
 else:
-    client = ExcelSWAPIClient(file_path=args.input)
+    client = ExcelSWAPIClient(path=args.input)
 
 manager = SWAPIDataManager(client)
 

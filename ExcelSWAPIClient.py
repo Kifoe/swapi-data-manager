@@ -1,23 +1,18 @@
 import pandas as pd
 import logging
+from SWAPIClient import SWAPIClient
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-class ExcelSWAPIClient:
-    def __init__(self, file_path: str):
-        self.file_path = file_path
+class ExcelSWAPIClient(SWAPIClient):
+    def __init__(self, path: str):
+        self.path = path
+        self.data = pd.read_excel(path, sheet_name=None)
 
     def fetch_json(self, endpoint: str) -> list:
-        sheet_name_map = {
-            "people": "people",
-            "planets": "planets",
-            "films": "films"
-        }
-        if endpoint not in sheet_name_map:
-            raise ValueError(f"Unknown endpoint: {endpoint}")
+        if endpoint not in self.data:
+            logger.warning(f"Endpoint {endpoint} не знайдено в {self.path}")
+            return []
 
-        sheet_name = sheet_name_map[endpoint]
-        df = pd.read_excel(self.file_path, sheet_name=sheet_name)
-        logger.info(f"Читання даних з файлу {self.file_path}, лист {sheet_name}")
-        return df.to_dict(orient='records')
+        return self.data[endpoint].to_dict(orient='records')
