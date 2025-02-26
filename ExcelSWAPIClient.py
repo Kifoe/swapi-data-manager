@@ -6,13 +6,14 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 class ExcelSWAPIClient(SWAPIClient):
-    def __init__(self, path: str):
+    def __init__(self, path: str, base_url: str):
+        super().__init__(base_url)
         self.path = path
         self.data = pd.read_excel(path, sheet_name=None)
 
     def fetch_json(self, endpoint: str) -> list:
         if endpoint not in self.data:
-            logger.warning(f"Endpoint {endpoint} не знайдено в {self.path}")
+            logger.warning(f"Читання даних з файлу {self.path}")
             return []
 
         return self.data[endpoint].to_dict(orient='records')
