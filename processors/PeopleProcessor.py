@@ -1,5 +1,5 @@
 import pandas as pd
-from EntityProcessor import EntityProcessor
+from processors.EntityProcessor import EntityProcessor
 
 class PeopleProcessor(EntityProcessor):
     def process(self, json_data: list) -> pd.DataFrame:

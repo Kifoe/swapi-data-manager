@@ -1,38 +1,33 @@
-import logging
 import pandas as pd
-from SWAPIClient import SWAPIClient
-from EntityProcessor import EntityProcessor
+from clients.SWAPIClient import SWAPIClient
+from logger_config import logger
+from interfaces.DataInterface import DataFetcher, DataProcessor, DataSaver
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger(__name__)
 
-class SWAPIDataManager:
+class SWAPIDataManager(DataFetcher, DataProcessor, DataSaver):
     def __init__(self, client: SWAPIClient):
         self.client = client
-        self.df_dict = {}
+        self.data = {}
         self.processors = {}
 
-    def register_processor(self, endpoint: str, processor: EntityProcessor):
-        self.processors[endpoint] = processor
-
     def fetch_entity(self, endpoint: str):
-        source_data = self.client.fetch_json(endpoint)
-        processor_class = self.processors.get(endpoint, EntityProcessor)
-        processor = processor_class()
-        self.df_dict[endpoint] = processor.process(source_data)
-        logger.info(f"Отримано {len(source_data)} записів для {endpoint}. Колонки: {self.df_dict[endpoint].columns.tolist()}")
+        raw_data = self.client.fetch_json(endpoint)
+        self.data[endpoint] = pd.DataFrame(raw_data)
+        logger.info(f"Fetched {len(raw_data)} records for {endpoint}")
+
+    def register_processor(self, entity, processor):
+        self.processors[entity] = processor
 
     def apply_filter(self, endpoint: str, columns_to_drop: list):
-        if endpoint in self.df_dict:
-            self.df_dict[endpoint] = self.df_dict[endpoint].drop(columns=columns_to_drop, errors='ignore')
-            logger.info(f'Видалено {columns_to_drop} із {self.df_dict}')
+        if endpoint in self.data:
+            self.data[endpoint] = self.data[endpoint].drop(columns=columns_to_drop, errors='ignore')
+            logger.info(f"Applied filter for {endpoint}, dropped columns: {columns_to_drop}")
         else:
-            logger.info(f'Дані для {endpoint} не знайдено')
+            logger.warning(f"Data for {endpoint} not found.")
 
-    def save_to_excel(self, file_name):
-        output_file = file_name
-        logger.info(f"Запис даних у Excel файл: {output_file}")
-        with pd.ExcelWriter(output_file) as writer:
-            for endpoint, df in self.df_dict.items():
+    def save_to_excel(self, filename: str):
+        with pd.ExcelWriter(filename) as writer:
+            for endpoint, df in self.data.items():
                 df.to_excel(writer, sheet_name=endpoint, index=False)
-        logger.info("Дані успішно записано у Excel.")
+                logger.info(f"Saved {endpoint} data to sheet.")
+        logger.info(f"Data successfully saved to {filename}.")

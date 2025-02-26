@@ -1,30 +1,71 @@
 import argparse
-from SWAPIClient import SWAPIClient
-from ExcelSWAPIClient import ExcelSWAPIClient
+import json
+import os
+
+from clients.ExcelSWAPIClient import ExcelSWAPIClient
+from processors.PeopleProcessor import PeopleProcessor
+from clients.SWAPIClient import SWAPIClient
 from SWAPIDataManager import SWAPIDataManager
-from PlanetsProcessor import PlanetsProcessor
-from PeopleProcessor import PeopleProcessor
-from FilmsProcessor import FilmsProcessor
 
-parser = argparse.ArgumentParser(description="SWAPI Data Manager")
-parser.add_argument('--input', required=True, help="URL або шлях до .xlsx файлу")
-parser.add_argument('--endpoints', required=True, help="Список сутностей через кому (наприклад, people,planets,films)")
-parser.add_argument('--output', required=True, help="Ім'я вихідного Excel-файлу")
-args = parser.parse_args()
 
-if args.input.startswith("http"):
-    client = SWAPIClient(base_url=args.input)
-else:
-    client = ExcelSWAPIClient(path=args.input)
+def main():
+    # Ініціалізація парсера аргументів
+    parser = argparse.ArgumentParser(description="SWAPI Data Manager")
+    parser.add_argument(
+        "--input",
+        required=True,
+        help="Base API URL or path to the Excel file"
+    )
+    parser.add_argument(
+        "--endpoint",
+        type=str,
+        help="Comma-separated list of entities to fetch (e.g. 'people,planets')", required=True
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        help="Output Excel file name",
+        required=True
+    )
+    parser.add_argument(
+        "--filters",
+        type=str,
+        help="Filters as JSON string (e.g. '{\"people\": [\"films\", \"species\"]}')",
+        required=False,
+        default='{}'
+    )
 
-manager = SWAPIDataManager(client)
+    args = parser.parse_args()
 
-manager.register_processor("people", PeopleProcessor)
-manager.register_processor("planets", PlanetsProcessor)
-manager.register_processor("films", FilmsProcessor)
+    # Створюємо клієнт для SWAPI
+    client = get_client(args.input)
 
-for endpoint in args.endpoints.split(','):
-    manager.fetch_entity(endpoint)
+    # Створюємо менеджер даних
+    manager = SWAPIDataManager(client)
 
-manager.save_to_excel(args.output)
-print(f"Дані успішно збережено у файл {args.output}")
+    # Завантажуємо та фільтруємо сутності
+    endpoints = args.endpoint.split(',')
+    filters = json.loads(args.filters)
+
+    manager.register_processor("people", PeopleProcessor())
+
+    for endpoint in endpoints:
+        manager.fetch_entity(endpoint)
+        if endpoint in filters:
+            manager.apply_filter(endpoint, filters[endpoint])
+
+    # Зберігаємо дані в Excel
+    manager.save_to_excel(args.output)
+
+
+def get_client(input_source: str):
+    if input_source.startswith("http"):
+        return SWAPIClient(input_source)
+    elif os.path.isfile(input_source) and input_source.endswith(".xlsx"):
+        return ExcelSWAPIClient(input_source)
+    else:
+        raise ValueError("Invalid input source. Provide a valid URL or an .xlsx file path.")
+
+
+if __name__ == "__main__":
+    main()
