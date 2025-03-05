@@ -20,3 +20,9 @@ class DataSaver(ABC):
     @abstractmethod
     def save_to_excel(self, filename: str):
         """Зберігає дані у файл Excel."""
+
+class DataProviderInterface(ABC):
+    @abstractmethod
+    def fetch_data(self, endpoint: str) -> list:
+        pass
+

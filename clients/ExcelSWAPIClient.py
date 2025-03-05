@@ -1,24 +1,13 @@
 import pandas as pd
-
-from clients.SWAPIClient import SWAPIClient
 from logger_config import logger
+from interfaces.DataInterface import DataProviderInterface
 
-
-class ExcelSWAPIClient(SWAPIClient):
+class ExcelSWAPIClient(DataProviderInterface):
     def __init__(self, path: str):
-        """
-        Ініціалізація з шляхом до Excel-файлу.
-        """
-        super().__init__(path)
+        self.path = path
         self.data = pd.read_excel(path, sheet_name=None)
 
-    def fetch_json(self, endpoint: str) -> list:
-        """
-        Завантажує дані з Excel-файлу для вказаного endpoint.
-
-        :param endpoint: Назва листа в Excel (наприклад, "people")
-        :return: список всіх сутностей у вигляді JSON
-        """
+    def fetch_data(self, endpoint: str) -> list:
         if endpoint not in self.data:
             logger.warning(f"Endpoint {endpoint} not found in {self.path}")
             return []

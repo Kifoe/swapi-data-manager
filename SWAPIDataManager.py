@@ -1,17 +1,15 @@
 import pandas as pd
-from clients.SWAPIClient import SWAPIClient
 from logger_config import logger
-from interfaces.DataInterface import DataFetcher, DataProcessor, DataSaver
-
+from interfaces.DataInterface import DataFetcher, DataProcessor, DataSaver, DataProviderInterface
 
 class SWAPIDataManager(DataFetcher, DataProcessor, DataSaver):
-    def __init__(self, client: SWAPIClient):
+    def __init__(self, client: DataProviderInterface):
         self.client = client
         self.data = {}
         self.processors = {}
 
     def fetch_entity(self, endpoint: str):
-        raw_data = self.client.fetch_json(endpoint)
+        raw_data = self.client.fetch_data(endpoint)
         self.data[endpoint] = pd.DataFrame(raw_data)
         logger.info(f"Fetched {len(raw_data)} records for {endpoint}")
 
